@@ -1,6 +1,6 @@
 # 💧 AquaGuard Motherboard — Arduino Recreation
 
-An open-source recreation of the AquaGuard water purifier control board using an Arduino Uno. Controls UV sterilization, solenoid water intake, and monitors water pressure and tank level — all with non-blocking logic and serial debugging.
+An open source recreation of the AquaGuard water purifier control board using an Arduino Uno. Controls UV sterilization, solenoid water intake, and monitors water pressure and tank level all with non blocking logic and serial debugging.
 
 ---
 
