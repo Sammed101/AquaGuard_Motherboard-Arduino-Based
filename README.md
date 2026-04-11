@@ -1,202 +1,129 @@
-# 💧 AquaGuard Motherboard — Arduino Recreation
+# 💧 Aquaguard Motherboard — Arduino Based
 
-An open source recreation of the AquaGuard water purifier control board using an Arduino Uno. Controls UV sterilization, solenoid water intake, and monitors water pressure and tank level all with non blocking logic and serial debugging.
+Built this Arduino-based controller to replace a faulty Aquaguard motherboard. It uses pressure and water level sensors to control the UV light and solenoid with simple timing logic. If your RO system has a similar configuration and you’re comfortable working with hardware, this project is for you.
 
+---
+
+## 📸 Project Overview
+
+<h3>🔌 Complete Setup</h3>
+<p align="center">
+  <img src="Images/Mother%20Board%20connections%20Diagram.png" width="600"/>
+</p>
+
+### ⚡ UV Ballast (Choke)
+
+<p align="center">
+  <img src="Images/UV%20Light%20Choke%2011w.png" width="600"/>
+</p>
+
+<br>
+
+🔗Link: [Philips UV Ballast (11W–14W)](https://www.amazon.in/Philips-11W-14W-Ballast-Light-Filter/dp/B01MR89ZJO)
+
+<h3>📊 Original Wiring Reference</h3>
+<p align="center">
+  <img src="Images/Water%20Flow%20Diagram%20%26%20Wiring%20Diagram.jpeg" width="600"/>
+</p>
+
+<h3>🏷️ Original Controller Specs</h3>
+<p align="center">
+  <img src="Images/Mother_Board_Name%26Features.JPEG" width="600"/>
+</p>
 ---
 
 ## 🔧 Features
 
-- **Water pressure monitoring** via input switch (short = pressure present)
-- **Water level monitoring** via float switch (short = tank full, open = tank empty)
-- **UV light control** via relay — 5-second warm-up before water flows
-- **Solenoid valve control** via relay — opens after UV warm-up completes
-- **Blue LED** — static when pressure OK, blinks when no pressure
-- **Green LED** — static when tank full, blinks when tank empty
-- **Non-blocking blink logic** using `millis()` — never freezes the system
-- **State machine architecture** — IDLE → UV_WARMUP → RUNNING → FAULT
-- **Full serial debug output** with `F()` macro to save RAM
-- **Fault recovery** — automatically resets after 2 seconds
+- Water pressure detection (input switch)
+- Tank water level detection (float switch)
+- UV light control via relay
+- Solenoid valve control via relay
+- UV warm-up delay (~5 seconds)
+- Non-blocking logic using `millis()`
+- Serial debugging support
+- LED indicators (same behavior as original controller)
+
+---
+
+## ⚙️ How It Works
+
+### Logic:
+
+- If **pressure is present** AND **tank is low**:
+  - Turn ON UV
+  - Wait ~5 seconds
+  - Turn ON solenoid (start filling)
+
+- If:
+  - Tank becomes full OR  
+  - Pressure is lost  
+
+👉 System turns OFF UV + solenoid
+
+---
+
+## 🔄 State Flow
+IDLE → UV_WARMUP → RUNNING → IDLE
 
 ---
 
 ## 📌 Pin Map
 
-| Pin | Component | Direction | Notes |
-|-----|-----------|-----------|-------|
-| D2  | Water pressure switch | INPUT_PULLUP | Short to GND = pressure present |
-| D3  | Water level switch | INPUT_PULLUP | Short to GND = tank full |
-| D4  | UV light relay | OUTPUT | Active-LOW relay module |
-| D5  | Solenoid valve relay | OUTPUT | Active-HIGH relay module |
-| D6  | Blue LED | OUTPUT | 220Ω series resistor to GND |
-| D7  | Green LED | OUTPUT | 220Ω series resistor to GND |
-| 5V  | Relay module VCC | POWER | Both relay modules |
-| GND | Common ground | POWER | All components |
+| Pin | Component              |
+|-----|----------------------|
+| D2  | Pressure switch       |
+| D3  | Level switch          |
+| D4  | UV relay              |
+| D5  | Solenoid relay        |
+| D6  | Blue LED              |
+| D7  | Green LED             |
 
 ---
 
-## ⚡ Circuit Overview
+## ⚡ Wiring Notes
 
-```
-+5V rail ────────────────────────────────────────────────
-         │                                    │
-    [Arduino Uno]                      [Relay VCC x2]
-         │                                    │
-    D2 ──┤── [Pressure SW] ── GND       D4 ──┤── UV Relay IN
-    D3 ──┤── [Level SW]    ── GND       D5 ──┤── Solenoid Relay IN
-    D6 ──┤── [220Ω] ── [Blue LED] ── GND
-    D7 ──┤── [220Ω] ── [Green LED] ── GND
-         │
-GND rail ────────────────────────────────────────────────
-```
-
-> ⚠️ The solenoid coil and UV ballast are powered by their **AC supply** switched by relay COM/NO contacts. Never connect mains voltage to Arduino pins.
+- Switches use `INPUT_PULLUP`
+- Short to GND = ACTIVE
+- Relays handle AC and DC load R1 for AC for UV Choke and R2 to the 12 v to the solenoid
+- Arduino only controls relays (low voltage)
 
 ---
 
-## 🔄 State Machine
+## ⚠️ Safety
 
-```
-         ┌─────────────────────────────────┐
-         │                                 │
-         ▼                                 │
-      [IDLE]                               │
-   UV OFF, Solenoid CLOSED                 │
-         │                                 │
-   Pressure OK + Level Low?                │
-         │ YES         │
-         ▼                                 │
-   [UV_WARMUP] — 5 seconds                 │
-   UV ON, Solenoid CLOSED                  │
-         │                                 │
-   5 sec elapsed?                          │
-         │ YES                             │
-         ▼                                 │
-     [RUNNING]                             │
-   UV ON, Solenoid OPEN                    │
-         │                                 │
-   Tank full OR pressure lost?             │
-         │ YES                             │
-         ▼                                 │
-      [FAULT]  ── 2s cooldown ─────────────┘
-   UV OFF, Solenoid CLOSED
-```
-
----
-
-## 🕐 Timing
-
-| Event | Duration |
-|-------|----------|
-| Level low stabilizing delay | 5 seconds |
-| UV warm-up before solenoid opens | 5 seconds |
-| Fault recovery cooldown | 2 seconds |
-| LED blink interval | 500 ms |
-
----
-
-## 📟 Serial Debug Output
-
-Open Serial Monitor at **9600 baud** to see real-time status:
-
-```
-===========================================
-  AquaGuard Controller - Initializing...  
-===========================================
-[INIT] UV Relay      → OFF
-[INIT] Solenoid      → CLOSED
-[INIT] System ready. Monitoring...
--------------------------------------------
-[SENSORS] Pressure: HIGH (OK)        | Blue  LED: STATIC  (Pressure OK)
-[SENSORS] Level:    LOW  (Fill Needed)| Green LED: BLINKING (Low Level)
-[WAIT] Level low - stabilizing 5 sec...
-[STABILIZING] 5 sec...
-[STABILIZING] 4 sec...
-[STABILIZING] 3 sec...
-[TRIGGER] Confirmed → Starting UV warm-up...
-[STATE] → UV WARM-UP (5 sec)
-[UV WARMUP] 5 sec remaining...
-[UV] Warm-up complete! Opening Solenoid...
-[STATE] → RUNNING - Water Purifying
-[STOP] Tank is FULL! Closing solenoid & UV OFF.
-[STATE] → IDLE
-```
+- UV ballast runs on **220V AC**
+- Never connect AC directly to Arduino
+- Use proper insulation and enclosure
+- Double-check relay wiring
 
 ---
 
 ## 🛠️ Hardware Required
 
-| Component | Qty | Notes |
-|-----------|-----|-------|
-| Arduino Uno | 1 | Or Nano with old bootloader |
-| 5V Relay module | 2 | One active-LOW (UV), one active-HIGH (solenoid) |
-| Water pressure switch | 1 | Normally open, closes when pressure present |
-| Float level switch | 1 | Closes when tank full, opens when empty |
-| Blue LED | 1 | 3mm or 5mm |
-| Green LED | 1 | 3mm or 5mm |
-| 220Ω resistor | 2 | One per LED |
-| Jumper wires | — | — |
-| 12V DC supply | 1 | For solenoid coil |
-| UV ballast/choke | 1 | Ready-made, controlled via relay |
+- Arduino Uno / Nano 
+- 2x Relay modules
+- Pressure switch
+- Float level switch
+- UV ballast (11W)
+- Solenoid valve
+- LEDs + resistors
+- Power supply
 
 ---
 
 ## 🚀 Getting Started
 
-1. **Clone this repo**
-   ```bash
-   git clone https://github.com/yourusername/aquaguard-arduino.git
-   ```
-
-2. **Open in Arduino IDE**
-   - File → Open → `aquaguard.ino`
-
-3. **Select correct board**
-   - Tools → Board → **Arduino Uno**
-   - Tools → Port → your COM port
-   - Tools → Programmer → **AVRISP mkII**
-
-4. **Upload**
-   - Click Upload (→)
-   - Open Serial Monitor at 9600 baud
-
-5. **Wire up** per the pin map above
+1. Upload `aquaguard.ino`
+2. Connect sensors + relays
+3. Power the system
+4. Monitor via Serial (9600 baud)
 
 ---
 
-## ⚙️ Configuration
+## 💡 Notes
 
-At the top of `aquaguard.ino` you can adjust timing:
-
-```cpp
-const unsigned long UV_WARMUP_MS  = 5000;  // UV warm-up duration (ms)
-const unsigned long LED_BLINK_MS  = 500;   // LED blink speed (ms)
-// Stabilizing delay is also 5000ms — search "5000" in STATE_IDLE block
-```
-
----
-
-## 🔍 Troubleshooting
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Upload fails with `openocd` error | Wrong board selected | Tools → Board → Arduino Uno |
-| `Low memory` warning | Too many strings in RAM | Wrap all `Serial.println` strings in `F()` |
-| Relay clicks on for 1-2 sec then off | Wrong relay polarity | Swap `LOW`/`HIGH` in `setSolenoid()` or `setUV()` |
-| LED blinks when it should be static | Inverted switch logic | Flip `== LOW` to `== HIGH` in switch read function |
-| Solenoid opens immediately, no UV delay | State machine skipping warmup | Check `uvStartTime` and `UV_WARMUP_MS` |
-| False triggers on level switch | Switch bouncing | Increase stabilizing delay from 5000 to 8000ms |
-
----
-
-## 📁 File Structure
-
-```
-aquaguard-arduino/
-├── aquaguard.ino       # Main Arduino sketch
-├── README.md           # This file
-├── LICENSE             # MIT License
-└── CHANGELOG.md        # Version history
-```
+- LED behavior matches Exactly with the original Aquaguard controller  
+- RED LED (UV fault indicator) is not implemented (optional)
 
 ---
 
@@ -214,6 +141,6 @@ Pull requests welcome! If you've adapted this for a different purifier brand or 
 
 ## 📄 License
 
-MIT License — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
+Aapache License — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
 
 ---
