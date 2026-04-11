@@ -106,7 +106,7 @@ bool isWaterLevelLow() {
 //  HELPER: Relay Control (active-LOW relay modules)
 // ──────────────────────────────────────────────
 void setUV(bool on) {
-  digitalWrite(PIN_UV_RELAY, on ? LOW : HIGH);
+  digitalWrite(PIN_UV_RELAY, on ? HIGH : LOW);
 }
 
 void setSolenoid(bool on) {
