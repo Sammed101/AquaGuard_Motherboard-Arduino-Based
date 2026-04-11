@@ -62,9 +62,33 @@ Built this Arduino-based controller to replace a faulty Aquaguard motherboard. I
 
 ---
 
-## 🔄 State Flow
-IDLE → UV_WARMUP → RUNNING → IDLE
+## 🔄 State Machine
 
+```
+         ┌─────────────────────────────────┐
+         │                                 │
+         ▼                                 │
+      [IDLE]                               │
+   UV OFF, Solenoid CLOSED                 │
+         │                                 │
+   Pressure OK + Level Low?                │
+         │ YES (after 5s stabilize)        │
+         ▼                                 │
+   [UV_WARMUP] — 5 seconds                 │
+   UV ON, Solenoid CLOSED                  │
+         │                                 │
+   5 sec elapsed?                          │
+         │ YES                             │
+         ▼                                 │
+     [RUNNING]                             │
+   UV ON, Solenoid OPEN                    │
+         │                                 │
+   Tank full OR pressure lost?             │
+         │ YES                             │
+         ▼                                 │
+      [FAULT]  ── 2s cooldown ─────────────┘
+   UV OFF, Solenoid CLOSED
+```
 ---
 
 ## 📌 Pin Map
@@ -100,23 +124,44 @@ IDLE → UV_WARMUP → RUNNING → IDLE
 
 ## 🛠️ Hardware Required
 
-- Arduino Uno / Nano 
-- 2x Relay modules
-- Pressure switch
-- Float level switch
-- UV ballast (11W)
-- Solenoid valve
-- LEDs + resistors
-- Power supply
+| Component | Qty | Notes |
+|-----------|-----|-------|
+| Arduino Uno | 1 | Or nano |
+| 5V Relay module | 2 | One (UV), one (solenoid) |
+| Water pressure switch | 1 | Normally open, closes when pressure present |
+| Float level switch | 1 | Closes when tank Empty, opens when Full |
+| Blue LED | 1 | 3mm or 5mm |
+| Green LED | 1 | 3mm or 5mm |
+| 220Ω resistor | 2 | Additional |
+| Jumper wires | — | — |
+| 12V DC supply | 1 | For solenoid coil |
+| UV ballast/choke | 1 | Ready-made, controlled via relay |
+
+---
+
 
 ---
 
 ## 🚀 Getting Started
 
-1. Upload `aquaguard.ino`
-2. Connect sensors + relays
-3. Power the system
-4. Monitor via Serial (9600 baud)
+1. **Clone this repo**
+   ```bash
+   git clone https://github.com/yourusername/aquaguard-arduino.git
+   ```
+
+2. **Open in Arduino IDE**
+   - File → Open → `aquaguard.ino`
+
+3. **Select correct board**
+   - Tools → Board → **Arduino Uno**
+   - Tools → Port → your COM port
+   - Tools → Programmer → **AVRISP mkII**
+
+4. **Upload**
+   - Click Upload (→)
+   - Open Serial Monitor at 9600 baud
+
+5. **Wire up** per the pin map above
 
 ---
 
@@ -124,6 +169,18 @@ IDLE → UV_WARMUP → RUNNING → IDLE
 
 - LED behavior matches Exactly with the original Aquaguard controller  
 - RED LED (UV fault indicator) is not implemented (optional)
+
+---
+## 🔍 Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Upload fails with `openocd` error | Wrong board selected | Tools → Board → Arduino Uno |
+| `Low memory` warning | Too many strings in RAM | Wrap all `Serial.println` strings in `F()` |
+| Relay clicks on for 1-2 sec then off | Wrong relay polarity | Swap `LOW`/`HIGH` in `setSolenoid()` or `setUV()` |
+| LED blinks when it should be static | Inverted switch logic | Flip `== LOW` to `== HIGH` in switch read function |
+| Solenoid opens immediately, no UV delay | State machine skipping warmup | Check `uvStartTime` and `UV_WARMUP_MS` |
+| False triggers on level switch | Switch bouncing | Increase stabilizing delay from 5000 to 8000ms |
 
 ---
 
