@@ -1,4 +1,4 @@
-# 💧 Aquaguard Motherboard — Arduino Based
+# Aquaguard Motherboard — Arduino Based
 
 Built this Arduino-based controller to replace a faulty Aquaguard motherboard. It uses pressure and water level sensors to control the UV light and solenoid with simple timing logic. If your RO system has a similar configuration and you’re comfortable working with hardware, this project is for you.
 
@@ -6,12 +6,12 @@ Built this Arduino-based controller to replace a faulty Aquaguard motherboard. I
 
 ## 📸 Project Overview
 
-<h3>🔌 Complete Setup</h3>
+<h3> Complete Setup</h3>
 <p align="center">
   <img src="Images/Mother%20Board%20connections%20Diagram.png" width="600"/>
 </p>
 
-### ⚡ UV Ballast (Choke)
+### UV Ballast (Choke)
 
 <p align="center">
   <img src="Images/UV%20Light%20Choke%2011w.png" width="600"/>
@@ -21,18 +21,18 @@ Built this Arduino-based controller to replace a faulty Aquaguard motherboard. I
 
 🔗Link: [Philips UV Ballast (11W–14W)](https://www.amazon.in/Philips-11W-14W-Ballast-Light-Filter/dp/B01MR89ZJO)
 
-<h3>📊 Original Wiring Reference</h3>
+<h3> Original Wiring Reference</h3>
 <p align="center">
   <img src="Images/Water%20Flow%20Diagram%20%26%20Wiring%20Diagram.jpeg" width="600"/>
 </p>
 
-<h3>🏷️ Original Controller Specs</h3>
+<h3> Original Controller Specs</h3>
 <p align="center">
   <img src="Images/Mother_Board_Name%26Features.JPEG" width="600"/>
 </p>
 ---
 
-## 🔧 Features
+##  Features
 
 - Water pressure detection (input switch)
 - Tank water level detection (float switch)
