@@ -91,7 +91,7 @@ Built this Arduino-based controller to replace a faulty Aquaguard motherboard. I
 ```
 ---
 
-## 📌 Pin Map
+##  Pin Map
 
 | Pin | Component              |
 |-----|----------------------|
